@@ -128,6 +128,7 @@ def build(destination=DESTINATION):
     (destination / "constant_checkpoint.py").write_text(reader)
     shutil.copyfile("the_net/shared_checkpoint.py", destination / "shared_checkpoint.py")
     shutil.copyfile("OMNI_MODEL_CARD.md", destination / "README.md")
+    shutil.copyfile("EXPERIMENT.md", destination / "EXPERIMENT.md")
     (destination / ".gitattributes").write_text(
         "* text=auto\n*.safetensors filter=lfs diff=lfs merge=lfs -text\n*.st filter=lfs diff=lfs merge=lfs -text\n"
     )

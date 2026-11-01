@@ -10,11 +10,14 @@ tags:
 
 # The Net
 
-20T-scale multimodal architecture. Text, audio, images, video and EEG. 686 attention/FFN blocks, a three-level sparse MoE core with 128 experts per layer and top-2 routing, and recurrent memory. PyTorch implementation and checkpoint files released under the MIT license.
+A 20T-scale multimodal architecture for text, audio, images, video and EEG. Modality-specific
+encoders feed a hierarchical sparse mixture-of-experts core with recurrent memory, and media
+decoders turn the shared representation back into each output modality.
 
 ## Architecture
 
-The Net has **11 major components**: five modality encoders, multiscale fusion, a shared world model, three media decoders and a memory controller.
+The Net has **11 major components**: five modality encoders, multiscale fusion, a shared world
+model, three media decoders and a memory controller.
 
 ```text
 Text · Audio · Images · Video · EEG
@@ -28,7 +31,10 @@ Text · Audio · Images · Video · EEG
  Text head · Audio / Image / Video decoders
 ```
 
-Encoders combine modality-specific stems with learned chunking, pooling and dechunking. Fusion aligns their representations before the shared core. The core uses attention, SwiGLU experts and RMSNorm across widths of 8,192, 12,288 and 16,384. Residual detail paths connect hierarchy levels; recurrent memory carries state between segments.
+Encoders combine modality-specific stems with learned chunking, pooling and dechunking. Fusion
+aligns their representations before the shared core. The core uses attention, SwiGLU experts and
+RMSNorm across three widths. Residual detail paths connect hierarchy levels; recurrent memory
+carries state between segments.
 
 | Modality | Interface |
 | --- | --- |
@@ -38,10 +44,19 @@ Encoders combine modality-specific stems with learned chunking, pooling and dech
 | Video | Spatiotemporal tubelets and video latents |
 | EEG | Multichannel signals with electrode adjacency |
 
-## Implementation
+## Model details
 
-The repository includes the PyTorch architecture, Transformers configuration,
-tokenizer and checkpoint files under the MIT license.
+| Field | Value |
+| --- | --- |
+| Architecture parameters | 20.09T |
+| Attention / FFN blocks | 686 |
+| Core widths | 8,192 / 12,288 / 16,384 |
+| Experts | 128 per layer, top-2 routing |
+| Tokenizer | Byte-level |
+| Weights | Constant initialization (untrained) |
+| License | MIT |
+
+## Files
 
 | File | Contents |
 | --- | --- |
@@ -57,7 +72,10 @@ tokenizer and checkpoint files under the MIT license.
 Text, audio, images, video and EEG, connected through a shared hierarchical core.
 
 **Q: How are the experts organized?**  
-The shared core spans three hierarchy levels, with 128 experts per layer and top-2 routing. Multiscale fusion connects the modality encoders to the core; media decoders and a text head provide the output interfaces.
+The shared core spans three hierarchy levels, with 128 experts per layer and top-2 routing.
+Multiscale fusion connects the modality encoders to the core; media decoders and a text head
+provide the output interfaces.
 
-**Q: What is this release?**  
-A **Safetensors & Xet storage experiment** with constant-initialized, shared weights.
+---
+
+Release format, storage layout and parameter counting: [EXPERIMENT.md](EXPERIMENT.md)
