@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "the-net"
+version = "0.2.0"
+description = "A shape-faithful 20.088T heterogeneous omni architecture with sparse checkpoints"
+requires-python = ">=3.12"
+dependencies = ["torch>=2.6,<3", "transformers>=4.57,<5", "safetensors>=0.6,<1"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.14,<1", "compressed-tensors==0.20.1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["the_net"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+
