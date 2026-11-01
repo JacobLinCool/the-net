@@ -47,13 +47,12 @@ print(checkpoint.slice(name, 0, 16))
 ```bash
 uv venv --python 3.12
 uv pip install --python .venv/bin/python -r requirements-model.txt pytest ruff
-uv pip install --python .venv/bin/python compressed-tensors==0.20.1 --no-deps
 .venv/bin/python -m pytest -q
 .venv/bin/ruff check .
 ```
 
 測試包含精確參數計數、五模態梯度、AutoClass round-trip、shape 一致性、
-bit packing，以及 compact checkpoint 與 packed checkpoint 的逐值比對。
+compact checkpoint 的常數值還原，以及 shared-bank 別名與 bit 讀取。
 
 ## 發布狀態
 

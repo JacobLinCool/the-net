@@ -1,15 +1,9 @@
-import importlib.util
-import json
-from pathlib import Path
-
 import pytest
 import torch
 from transformers import AutoModel
 
-from build_architecture import build
 from the_net.configuration_omni import OmniConfig
 from the_net.modeling_omni import OmniModel
-from the_net.packed_checkpoint import load_packed_checkpoint, unpack_one_bit
 
 
 def test_tiny_graph_multimodal_and_gradients():
@@ -34,39 +28,6 @@ def test_tiny_graph_multimodal_and_gradients():
             assert parameter.grad is not None, name
         if parameter.grad is not None:
             assert torch.isfinite(parameter.grad).all(), name
-
-
-def test_packing_matches_reference_implementation():
-    # Load only the installed, dependency-free reference helper rather than the
-    # entire optional compressed-tensors runtime.
-    spec = importlib.util.find_spec("compressed_tensors")
-    if spec is None:
-        pytest.skip("Install compressed-tensors==0.20.1 for reference format verification")
-    path = Path(spec.origin).parent / "compressors/pack_quantized/helpers.py"
-    helper_spec = importlib.util.spec_from_file_location("packing_reference", path)
-    reference = importlib.util.module_from_spec(helper_spec)
-    helper_spec.loader.exec_module(reference)
-    for columns in (1, 31, 32, 33, 161):
-        values = torch.randint(-1, 1, (7, columns), dtype=torch.int8)
-        packed = reference.pack_to_int32(values, 1)
-        torch.testing.assert_close(unpack_one_bit(packed, values.shape), values.float())
-
-
-def test_sparse_roundtrip_and_index(tmp_path):
-    destination = tmp_path / "tiny"
-    report = build(destination, tiny=True)
-    assert report["allocated_file_bytes"] < 500_000_000
-    model = load_packed_checkpoint(destination).eval()
-    with torch.no_grad():
-        result = model(torch.tensor([[1, 4, 5]]))
-    assert torch.isfinite(result.next_token_logits).all()
-    assert model.generate(torch.tensor([[1, 4]]), max_new_tokens=2).shape == (1, 4)
-    logical = json.loads((destination / "logical_tensor_shapes.json").read_text())
-    assert sum(p.numel() for p in model.parameters()) == sum(
-        x["parameters"] for x in logical.values()
-    )
-    with pytest.raises(ValueError, match="allocation limit"):
-        load_packed_checkpoint(destination, max_parameters=1)
 
 
 def test_autoclass_roundtrip_preserves_modality_ids(tmp_path):

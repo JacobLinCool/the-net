@@ -37,7 +37,7 @@ def build(destination, tiny=False):
         module = modules[parent]
         value = 0.0
         if isinstance(module, nn.Linear) and leaf == "weight":
-            # Match the float32 scale stored by the packed checkpoint writer.
+            # Linear weights are -1/sqrt(fan_in), rounded to float32.
             value = -struct.unpack("<f", struct.pack("<f", 1 / math.sqrt(parameter.shape[1])))[0]
         elif isinstance(module, nn.RMSNorm):
             value = 1.0
