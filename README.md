@@ -1,21 +1,22 @@
 # The Net
 
-異質階層全模態模型架構：文字、音訊、影像、影片與 EEG encoder，搭配
-多尺度融合、Hierarchical Sparse MoE、媒體 decoder 與記憶模組。
+A heterogeneous, hierarchical omni-modal architecture: text, audio, image, video and EEG encoders,
+combined with multiscale fusion, a hierarchical sparse MoE, media decoders and a memory module.
 
-- **20T 級**邏輯架構
-- **686** 個 attention／FFN blocks
-- **68,464** 個具名權重張量
-- 共享核心寬度 **8,192 / 12,288 / 16,384**，每層 **128 experts，top-2 routing**
-- Checkpoint：常數初始化、共享儲存
+- **20T-scale** logical architecture
+- **686** attention/FFN blocks
+- **68,464** named weight tensors
+- Shared core widths **8,192 / 12,288 / 16,384**, with **128 experts per layer and top-2 routing**
+- Checkpoint: constant initialization, shared storage
 
-11 個主要 component 的架構介紹見 [模型卡](OMNI_MODEL_CARD.md)。
+See the [model card](OMNI_MODEL_CARD.md) for an overview of the 11 major components.
 
 ## Compact checkpoint
 
-目前的常數權重以「每個張量的數值＋原始 shape」儲存，可精確還原初始化值。
-`tensor_shapes.json` 保留完整層級名稱與矩陣維度；safetensors 儲存對應數值。
-Hub 的 tensor 查看器顯示實際儲存形狀。
+The constant weights are stored as one value plus the original shape per tensor, which restores
+the initialization exactly. `tensor_shapes.json` keeps the full hierarchical names and matrix
+dimensions; the safetensors file stores the matching values. The Hub's tensor viewer shows the
+stored shapes.
 
 ```bash
 .venv/bin/python build_compact.py --output artifacts/the_net_compact
@@ -34,15 +35,15 @@ print(checkpoint.slice(name, 0, 16))
 
 ## Small runtime
 
-同一組模組類別提供 1.899M 參數的小型設定，可在 CPU 上執行。
+The same module classes provide a small 1.899M-parameter configuration that runs on CPU.
 
 ```bash
 .venv/bin/python build_checkpoint.py --output artifacts/omni-runtime
 ```
 
-載入方式與輸入格式見 [runtime 模型卡](RUNTIME_CARD.md)。
+See the [runtime model card](RUNTIME_CARD.md) for loading and input formats.
 
-## 開發
+## Development
 
 ```bash
 uv venv --python 3.12
@@ -51,21 +52,27 @@ uv pip install --python .venv/bin/python -r requirements-model.txt pytest ruff
 .venv/bin/ruff check .
 ```
 
-測試包含精確參數計數、五模態梯度、AutoClass round-trip、shape 一致性、
-compact checkpoint 的常數值還原，以及 shared-bank 別名與 bit 讀取。
+The tests cover exact parameter counts, gradients across all five modalities, AutoClass
+round-trips, shape consistency, restoration of the compact checkpoint's constant values, and
+shared-bank alias and bit reads.
 
-## 發布狀態
+## Release status
 
-[Hugging Face 原生查看器](https://huggingface.co/JacobLinCool/the-net?show_file_info=model.safetensors.index.json) 已確認顯示 **20.2T params** 與階層式 tensor 清單。
-一份 `architecture.safetensors` 保留 68,464 個架構名稱；9,400 個分片路徑共用一份 U8 bank。
-Hub 回報 usedStorage 為 392,572,666 bytes；全部不重複檔案合計 405,144,382 bytes。
-原生查看器顯示儲存區塊 shape；完整架構 shape 位於 `tensor_shapes.json`。
-原生計數包含重複共享的 bit slots，與獨立學習權重數不同。
+The [Hugging Face native viewer](https://huggingface.co/JacobLinCool/the-net?show_file_info=model.safetensors.index.json)
+is confirmed to show **20.2T params** and the hierarchical tensor list. A single
+`architecture.safetensors` holds the 68,464 architecture names; 9,400 shard paths share one U8
+bank. The Hub reports a usedStorage of 392,572,666 bytes; all unique files total 405,144,382 bytes.
+The native viewer shows stored block shapes; the full architecture shapes are in
+`tensor_shapes.json`. The native count includes repeated shared bit slots and differs from the
+number of independently learned weights. Release notes: [EXPERIMENT.md](EXPERIMENT.md).
 
-`SharedBankCheckpoint` 明確解析 `the-net-shared-aliases-v2` 的別名索引，提供有界的儲存區塊與 bit 讀取。
-建立封裝：`.venv/bin/python build_shared_display.py`。
-發布工具 `publish_shared_display.py --recreate` 會刪除並重建遠端 repository，檢查不重複 LFS 儲存量，再用伺服器端複製建立分片路徑。
+`SharedBankCheckpoint` explicitly resolves the `the-net-shared-aliases-v2` alias index and
+provides bounded reads of stored blocks and bits. Build the package with
+`.venv/bin/python build_shared_display.py`. The publisher `publish_shared_display.py --recreate`
+deletes and recreates the remote repository, checks unique LFS storage, then creates the shard
+paths with server-side copies.
 
-完整 metadata 共 9,401 個 headers、77,864 個 tensor entries，原始 headers 合計約 10.73 MB。
-本次完整 API 回應為 11,537,231 bytes，下載及解析耗時 29.222 秒。
-最新驗證：`artifacts/shared-display-v2-verification.json`；原生 badge 與完整索引清單均已在瀏覽器確認。
+The full metadata spans 9,401 headers and 77,864 tensor entries, about 10.73 MB of raw headers.
+The latest full API response was 11,537,231 bytes and took 29.222 seconds to download and parse.
+Latest verification: `artifacts/shared-display-v2-verification.json`; the native badge and the
+full index listing were both confirmed in the browser.
